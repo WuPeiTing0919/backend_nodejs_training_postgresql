@@ -35,11 +35,11 @@ router.get('/', async (req, res, next) => {
 // [POST] 新增購買方案
 router.post('/', async (req, res, next) => {
     try{
-        let data = req.body;
+        const {name,credit_amount,price} = req.body;
 
         // [HTTP 400] 資料填寫不完整異常
-        if(mf.isUndefined(data.name) || mf.isUndefined(data.credit_amount) || mf.isUndefined(data.price)
-        || mf.isNotValidSting(data.name) || mf.isNotValidInteger(data.credit_amount) || mf.isNotValidInteger(data.price)){
+        if(mf.isUndefined(name) || mf.isUndefined(credit_amount) || mf.isUndefined(price)
+        || mf.isNotValidSting(name) || mf.isNotValidInteger(credit_amount) || mf.isNotValidInteger(price)){
             resStatus({
             res:res,
             status:400,
@@ -50,7 +50,7 @@ router.post('/', async (req, res, next) => {
         }
 
         // [HTTP 409] 資料重複異常
-        let nameData = await creditPackage_db.findOneBy({"name" : data.name});
+        const nameData = await creditPackage_db.findOneBy({"name" : name});
         if (nameData){
           resStatus({
             res:res,
@@ -63,9 +63,9 @@ router.post('/', async (req, res, next) => {
 
         // 上傳數據
         const newPost = creditPackage_db.create({ 
-          "name": data.name,
-          "credit_amount": data.credit_amount,
-          "price": data.price
+          name,
+          credit_amount,
+          price
          });
         const creditPackage_data =await creditPackage_db.save(newPost);
         
@@ -94,7 +94,7 @@ router.post('/', async (req, res, next) => {
 router.delete('/:creditPackageId', async (req, res, next) => {
     try{
         // 抓取需要刪除的 ID 資料
-        let creditPackage_Id = req.params.creditPackageId;
+        const creditPackage_Id = req.params.creditPackageId;
       
         // [HTTP 400] ID資料提供不完整異常
         if(mf.isUndefined(creditPackage_Id) || mf.isNotValidSting(creditPackage_Id)){

@@ -35,10 +35,10 @@ router.get('/', async (req, res, next) => {
 // [POST] 新增購買方案
 router.post('/', async (req, res, next) => {
     try{
-        let data = req.body;
+        const {name} = req.body;
       
         // [HTTP 400] 資料填寫不完整異常
-        if(mf.isUndefined(data.name) || mf.isNotValidSting(data.name)){
+        if(mf.isUndefined(name) || mf.isNotValidSting(name)){
           resStatus({
             res:res,
             status:400,
@@ -49,7 +49,7 @@ router.post('/', async (req, res, next) => {
         }
 
         // [HTTP 409] 資料重複異常
-        let nameData = await skill_db.findOneBy({"name" : data.name});
+        const nameData = await skill_db.findOneBy({"name" : name});
         if (nameData){
           resStatus({
             res:res,
@@ -62,7 +62,7 @@ router.post('/', async (req, res, next) => {
 
         // 上傳數據
         const newPost = skill_db.create({ 
-          "name": data.name
+          name
          });
          const skill_data = await skill_db.save(newPost);
         
@@ -88,7 +88,7 @@ router.post('/', async (req, res, next) => {
 router.delete('/:skillId', async (req, res, next) => {
     try{
         // 抓取需要刪除的 ID 資料
-        let skill_Id = req.params.skillId;
+        const skill_Id = req.params.skillId;
       
         // [HTTP 400] ID資料提供不完整異常
         if(mf.isUndefined(skill_Id) || mf.isNotValidSting(skill_Id)){

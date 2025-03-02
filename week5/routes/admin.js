@@ -16,13 +16,15 @@ const skill_db = dataSource.getRepository('Skill');
 // [POST] 新增教練課程資料
 router.post('/coaches/courses', async (req, res, next) => {
     try{
-        let data = req.body;
+        const {user_id,skill_id,name,description,
+                start_at : startAt,end_at : endAt,
+                max_participants,meeting_url} = req.body;
 
         // [HTTP 400] 資料填寫不完整異常
-        if(mf.isUndefined(data.user_id) || mf.isUndefined(data.skill_id) || mf.isUndefined(data.name)
-        || mf.isUndefined(data.description) || mf.isUndefined(data.start_at) || mf.isUndefined(data.end_at) || mf.isUndefined(data.max_participants)
-        || mf.isNotValidSting(data.user_id) || mf.isNotValidSting(data.skill_id) || mf.isNotValidSting(data.name)
-        || mf.isNotValidSting(data.description) || mf.isValidDate(data.start_at) || mf.isValidDate(data.end_at) || mf.isNotValidInteger(data.max_participants)){
+        if(mf.isUndefined(user_id) || mf.isUndefined(skill_id) || mf.isUndefined(name)
+        || mf.isUndefined(description) || mf.isUndefined(startAt) || mf.isUndefined(endAt) || mf.isUndefined(max_participants)
+        || mf.isNotValidSting(user_id) || mf.isNotValidSting(skill_id) || mf.isNotValidSting(name)
+        || mf.isNotValidSting(description) || mf.isValidDate(startAt) || mf.isValidDate(endAt) || mf.isNotValidInteger(max_participants)){
             resStatus({
             res:res,
             status:400,
@@ -32,7 +34,7 @@ router.post('/coaches/courses', async (req, res, next) => {
             return
         }
 
-        if(mf.isSDataEDataCompare(data.start_at,data.end_at)){
+        if(mf.isSDataEDataCompare(startAt,endAt)){
             resStatus({
             res:res,
             status:400,
@@ -43,7 +45,7 @@ router.post('/coaches/courses', async (req, res, next) => {
         }
 
         // [HTTP 400] 課程網址資料填寫不完整異常
-        if(data.meeting_url && mf.isInvalidURL(data.meeting_url)){
+        if(meeting_url && mf.isInvalidURL(meeting_url)){
             resStatus({
             res:res,
             status:400,
@@ -54,7 +56,7 @@ router.post('/coaches/courses', async (req, res, next) => {
         }
 
         // [HTTP 400] 在使用者資料表，查無 userID 的資料
-        let userData = await user_db.findOneBy({"id" : data.user_id});
+        const userData = await user_db.findOneBy({"id" : user_id});
         if (!userData){
             resStatus({
             res:res,
@@ -77,7 +79,7 @@ router.post('/coaches/courses', async (req, res, next) => {
         }
 
         // [HTTP 400] 在教練技能資料表，查無 skillID 的資料
-        let skillData = await skill_db.findOneBy({"id" : data.skill_id});
+        const skillData = await skill_db.findOneBy({"id" : skill_id});
         if (!skillData){
             resStatus({
             res:res,
@@ -89,11 +91,11 @@ router.post('/coaches/courses', async (req, res, next) => {
         }
 
         // [HTTP 409] 資料重複異常
-        let courseData = await course_db.findOneBy({
-            "user_id" : data.user_id,
-            "skill_id" : data.skill_id,
-            "startAt" : data.start_at,
-            "endAt" : data.end_at
+        const courseData = await course_db.findOneBy({
+            user_id,
+            skill_id,
+            startAt,
+            endAt
         });
         if (courseData){
             resStatus({
@@ -107,16 +109,16 @@ router.post('/coaches/courses', async (req, res, next) => {
 
         // 上傳數據
         const newPost = course_db.create({ 
-            "user_id" : data.user_id,
-            "skill_id" : data.skill_id,
-            "name" : data.name,
-            "description" : data.description,
-            "startAt" : data.start_at,
-            "endAt" : data.end_at,
-            "max_participants" : data.max_participants,
-            "meeting_url" : data.meeting_url
+            user_id,
+            skill_id,
+            name,
+            description,
+            startAt,
+            endAt,
+            max_participants,
+            meeting_url
         });
-        let saveCoach = await course_db.save(newPost);
+        const saveCoach = await course_db.save(newPost);
 
         // [HTTP 201] 呈現上傳後資料
         resStatus({
@@ -150,13 +152,16 @@ router.post('/coaches/courses', async (req, res, next) => {
 router.put('/coaches/courses/:courseId', async (req, res, next) => {
     try{
         const courseId = req.params.courseId;
-        let data = req.body;
+        const {skill_id,name,description,
+            start_at : startAt,end_at : endAt,
+            max_participants,meeting_url
+        } = req.body;
 
         // [HTTP 400] 資料填寫不完整異常
-        if(mf.isUndefined(courseId) || mf.isUndefined(data.skill_id) || mf.isUndefined(data.name)
-        || mf.isUndefined(data.description) || mf.isUndefined(data.start_at) || mf.isUndefined(data.end_at) || mf.isUndefined(data.max_participants)
-        || mf.isNotValidSting(courseId) || mf.isNotValidSting(data.skill_id) || mf.isNotValidSting(data.name)
-        || mf.isNotValidSting(data.description) || mf.isValidDate(data.start_at) || mf.isValidDate(data.end_at) || mf.isNotValidInteger(data.max_participants)){
+        if(mf.isUndefined(courseId) || mf.isUndefined(skill_id) || mf.isUndefined(name)
+        || mf.isUndefined(description) || mf.isUndefined(startAt) || mf.isUndefined(endAt) || mf.isUndefined(max_participants)
+        || mf.isNotValidSting(courseId) || mf.isNotValidSting(skill_id) || mf.isNotValidSting(name)
+        || mf.isNotValidSting(description) || mf.isValidDate(startAt) || mf.isValidDate(endAt) || mf.isNotValidInteger(max_participants)){
             resStatus({
             res:res,
             status:400,
@@ -166,7 +171,7 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
             return
         }
 
-        if(mf.isSDataEDataCompare(data.start_at,data.end_at)){
+        if(mf.isSDataEDataCompare(startAt,endAt)){
             resStatus({
             res:res,
             status:400,
@@ -177,7 +182,7 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
         }
 
         // [HTTP 400] 課程網址資料填寫不完整異常
-        if(data.meeting_url && mf.isInvalidURL(data.meeting_url)){
+        if(meeting_url && mf.isInvalidURL(meeting_url)){
             resStatus({
             res:res,
             status:400,
@@ -188,7 +193,7 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
         }
 
         // [HTTP 400] 在使用者資料表，查無 userID 的資料
-        let courseData = await course_db.findOneBy({"id" : courseId});
+        const courseData = await course_db.findOneBy({"id" : courseId});
         if (!courseData){
             resStatus({
             res:res,
@@ -200,7 +205,7 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
         }
 
         // [HTTP 400] 在教練技能資料表，查無 skillID 的資料
-        let skillData = await skill_db.findOneBy({"id" : data.skill_id});
+        const skillData = await skill_db.findOneBy({"id" : skill_id});
         if (!skillData){
             resStatus({
             res:res,
@@ -215,13 +220,13 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
         const updateCourse = await course_db.update(
             {"id" : courseId},
             { 
-                "skill_id" : data.skill_id,
-                "name" : data.name,
-                "description" : data.description,
-                "startAt" : data.start_at,
-                "endAt" : data.end_at,
-                "max_participants" : data.max_participants,
-                "meeting_url" : data.meeting_url
+                skill_id,
+                name,
+                description,
+                startAt,
+                endAt,
+                max_participants,
+                meeting_url
             }
         );
         // [HTTP 400] 更新課程資料失敗
@@ -235,7 +240,7 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
             return;
         }
 
-        let saveCoach = await course_db.findOneBy({"id" : courseId});
+        const saveCoach = await course_db.findOneBy({"id" : courseId});
         // [HTTP 200] 呈現更新後資料
         resStatus({
             res:res,
@@ -268,11 +273,11 @@ router.put('/coaches/courses/:courseId', async (req, res, next) => {
 router.post('/coaches/:userId', async (req, res, next) => {
     try{
         const userId = req.params.userId;
-        let data = req.body;
+        const {description,experience_years,profile_image_url} = req.body;
 
         // [HTTP 400] 資料填寫不完整異常
-        if(mf.isUndefined(userId) || mf.isUndefined(data.description) || mf.isUndefined(data.experience_years)
-        || mf.isNotValidSting(userId) || mf.isNotValidInteger(data.experience_years)){
+        if(mf.isUndefined(userId) || mf.isUndefined(description) || mf.isUndefined(experience_years)
+        || mf.isNotValidSting(userId) || mf.isNotValidInteger(experience_years)){
             resStatus({
             res:res,
             status:400,
@@ -283,7 +288,7 @@ router.post('/coaches/:userId', async (req, res, next) => {
         }
 
         // [HTTP 400] 圖片資料填寫不完整異常
-        if(data.profile_image_url && mf.isValidImageUrl(data.profile_image_url)){
+        if(profile_image_url && mf.isValidImageUrl(profile_image_url)){
             resStatus({
             res:res,
             status:400,
@@ -294,7 +299,7 @@ router.post('/coaches/:userId', async (req, res, next) => {
         }
 
         // [HTTP 400] 在使用者資料表，查無 userID 的資料
-        let userData = await user_db.findOneBy({"id" : userId});
+        const userData = await user_db.findOneBy({"id" : userId});
         if (!userData){
             resStatus({
             res:res,
@@ -317,7 +322,7 @@ router.post('/coaches/:userId', async (req, res, next) => {
         }
 
         // [HTTP 400] 更新使用者資料失敗
-        let userUpdateRole = await user_db.update(
+        const userUpdateRole = await user_db.update(
             {"id" : userId,"role" : "USER"},
             {"role" : "COACH"}
         );
@@ -334,12 +339,12 @@ router.post('/coaches/:userId', async (req, res, next) => {
         // 上傳數據
         const newPost = coach_db.create({ 
             "user_id" : userId,
-            "experience_years": data.experience_years,
-            "description" : data.description,
-            "profile_image_url" : data.profile_image_url
+            experience_years,
+            description,
+            profile_image_url
         });
-        let saveCoach = await coach_db.save(newPost);
-        let saveUser = await user_db.findOneBy({"id" : userId});
+        const saveCoach = await coach_db.save(newPost);
+        const saveUser = await user_db.findOneBy({"id" : userId});
 
         // [HTTP 201] 呈現上傳後資料
         resStatus({

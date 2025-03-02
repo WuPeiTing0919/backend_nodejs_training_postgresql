@@ -13,7 +13,7 @@ const user_db = dataSource.getRepository('User');
 // [POST] 使用者註冊
 router.post('/signup', async (req, res, next) => {
     try{
-        let data = req.body;
+        const {name,email,password} = req.body;
 
         // [HTTP 400] 資料填寫不完整異常
         /*
@@ -32,10 +32,10 @@ router.post('/signup', async (req, res, next) => {
             > 需在 8~16 字左右
             > 必填，須是文字格式
         */
-        if(mf.isUndefined(data.name) || mf.isUndefined(data.email) || mf.isUndefined(data.password) 
-        || mf.isNotValidSting(data.name) || mf.isNotValidSting(data.email) || mf.isNotValidSting(data.password)
-        || mf.isAlphanumericChinese(data.name) || mf.isValidEmail(data.email) || mf.isAlphanumeric(data.password)
-        || mf.controlDigitalRange(data.name,2,10)){
+        if(mf.isUndefined(name) || mf.isUndefined(email) || mf.isUndefined(password) 
+        || mf.isNotValidSting(name) || mf.isNotValidSting(email) || mf.isNotValidSting(password)
+        || mf.isAlphanumericChinese(name) || mf.isValidEmail(email) || mf.isAlphanumeric(password)
+        || mf.controlDigitalRange(name,2,10)){
             resStatus({
             res:res,
             status:400,
@@ -46,7 +46,7 @@ router.post('/signup', async (req, res, next) => {
         }
 
         // [HTTP 400] 密碼填寫不完整異常
-        if(mf.controlDigitalRange(data.password,8,16) || mf.containsLetterAndNumber(data.password)){
+        if(mf.controlDigitalRange(password,8,16) || mf.containsLetterAndNumber(password)){
             resStatus({
             res:res,
             status:400,
@@ -57,7 +57,7 @@ router.post('/signup', async (req, res, next) => {
         }
 
         // [HTTP 409] 資料重複異常
-        let emailData = await user_db.findOneBy({"email" : data.email});
+        const emailData = await user_db.findOneBy({"email" : email});
         if (emailData){
             resStatus({
             res:res,
@@ -70,10 +70,10 @@ router.post('/signup', async (req, res, next) => {
 
         // 上傳數據
         const newPost = user_db.create({ 
-            "name" : data.name,
-	        "email" : data.email,
+            name,
+	        email,
             "role" : "USER",
-	        "password" : data.password
+	        password
         });
         const user_data = await user_db.save(newPost);
 
