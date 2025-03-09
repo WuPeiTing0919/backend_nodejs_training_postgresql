@@ -28,12 +28,13 @@ async function isvalidgetCoach(req, res, next) {
 // [HTTP 400] 資料填寫不完整異常
 async function isvalidgetCoachDetail(req, res, next) {
     const coachId = req.params.coachId;
+    const validateError_String = mf.validateFields_String({ courseId });
 
-    if(mf.isUndefined(coachId) || mf.isNotValidSting(coachId)){
+    if(validateError_String !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String
         });
         return
     }

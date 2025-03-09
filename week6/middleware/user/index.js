@@ -27,31 +27,15 @@ async function isvalidPassword(req, res, next){
 // [HTTP 400] 資料填寫不完整異常
 async function isvalidUser(req, res, next) {
     const {name,email,password} = req.body;
-    
-    /*
-        規則 :
-        1. 名字 : 
-        > 可中文、英文、數字，不可有特殊符號和空白
-        > 需在 2~10 字左右
-        > 必填，須是文字格式
+    const validateError_String = mf.validateFields_String({ name,email,password });
 
-        2. Email :
-        > 可英文、數字，須符合 email 格式
-        > 必填，須是文字格式
-
-        3. 密碼 :
-        > 可英文、數字，須包含英文數字大小寫
-        > 需在 8~16 字左右
-        > 必填，須是文字格式
-    */
-    if(mf.isUndefined(name) || mf.isUndefined(email) || mf.isUndefined(password) 
-    || mf.isNotValidSting(name) || mf.isNotValidSting(email) || mf.isNotValidSting(password)
+    if(validateError_String !== null
     || mf.isAlphanumericChinese(name) || mf.isValidEmail(email) || mf.isAlphanumeric(password)
     || mf.controlDigitalRange(name,2,10)){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message: validateError_String || "欄位未填寫正確"
         });
         return
     }
@@ -80,14 +64,13 @@ async function isduplicateEmail(req, res, next){
 // [HTTP 400] 資料填寫不完整異常
 async function isvalidloginUser(req, res, next) {
     const {email,password} = req.body;
+    const validateError_String = mf.validateFields_String({ email,password });
     
-    if(mf.isUndefined(email) || mf.isUndefined(password) 
-    || mf.isNotValidSting(email) || mf.isNotValidSting(password)
-    || mf.isValidEmail(email) || mf.isAlphanumeric(password)){
+    if(validateError_String !== null || mf.isValidEmail(email) || mf.isAlphanumeric(password)){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message: validateError_String || "欄位未填寫正確"
         });
         return
     }
@@ -130,12 +113,13 @@ async function isduplicateUser(req, res, next){
 // [HTTP 400] 資料填寫不完整異常
 async function isvalidProfile(req, res, next) {
     const {id} = req.user;
+    const validateError_String = mf.validateFields_String({ id });
     
-    if(mf.isUndefined(id) || mf.isNotValidSting(id)){
+    if(validateError_String !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String
         });
         return
     }
@@ -148,13 +132,13 @@ async function isvalidProfile(req, res, next) {
 async function isvalidputProfile(req, res, next) {
     const {id} = req.user;
     const {name} = req.body;
+    const validateError_String = mf.validateFields_String({ id,name });
     
-    if(mf.isUndefined(id) || mf.isUndefined(name)
-    || mf.isNotValidSting(id) || mf.isNotValidSting(name)){
+    if(validateError_String !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String
         });
         return
     }

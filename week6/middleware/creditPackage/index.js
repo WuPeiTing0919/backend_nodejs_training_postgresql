@@ -4,19 +4,19 @@ const mf = require("../../utils/isValid");
 
 // 宣告會使用的 db 資料表
 const creditPackage_db = dataSource.getRepository('CreditPackage');
-const creditPurchase_db = dataSource.getRepository('CreditPurchase');
 
 // 共用
 // [HTTP 400] ID資料提供不完整異常
 async function isvalidCreditPackageID(req, res, next) {
     // 抓取需要刪除的 ID 資料
     const creditPackage_Id = req.params.creditPackageId;
+    const validateError_String = mf.validateFields_String({ creditPackage_Id });
     
-    if(mf.isUndefined(creditPackage_Id) || mf.isNotValidSting(creditPackage_Id)){
+    if(validateError_String !== null){
         resStatus({
         res:res,
         status:400,
-        message:"ID錯誤"
+        message:validateError_String
         });
         return
     }
@@ -28,13 +28,14 @@ async function isvalidCreditPackageID(req, res, next) {
 // [HTTP 400] 資料填寫不完整異常
 async function isvalidCreditPackage(req, res, next) {
     const {name,credit_amount,price} = req.body;
-
-    if(mf.isUndefined(name) || mf.isUndefined(credit_amount) || mf.isUndefined(price)
-    || mf.isNotValidSting(name) || mf.isNotValidInteger(credit_amount) || mf.isNotValidInteger(price)){
+    const validateError_String = mf.validateFields_String({ name });
+    const validateError_Integer = mf.validateFields_Integer({ credit_amount,price });
+    
+    if(validateError_String !== null || validateError_Integer !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message: validateError_String || validateError_Integer
         });
         return
     }

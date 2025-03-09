@@ -82,15 +82,16 @@ async function isvalidCourse(req, res, next) {
     const {skill_id,name,description,
             start_at : startAt,end_at : endAt,
             max_participants} = req.body;
+
+    const validateError_String = mf.validateFields_String({ user_id,skill_id,name,description });
+    const validateError_Int = mf.validateFields_Int({ max_participants });
+    const validateError_Date = mf.validateFields_Date({ startAt,endAt });
     
-    if(mf.isUndefined(user_id) || mf.isUndefined(skill_id) || mf.isUndefined(name)
-    || mf.isUndefined(description) || mf.isUndefined(startAt) || mf.isUndefined(endAt) || mf.isUndefined(max_participants)
-    || mf.isNotValidSting(user_id) || mf.isNotValidSting(skill_id) || mf.isNotValidSting(name)
-    || mf.isNotValidSting(description) || mf.isValidDate(startAt) || mf.isValidDate(endAt) || mf.isNotValidInteger(max_participants)){
+    if(validateError_String !== null || validateError_Int !== null || validateError_Date !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String || validateError_Int || validateError_Date
         });
         return
     }
@@ -148,14 +149,15 @@ async function isvalidputCourse(req, res, next) {
         max_participants
     } = req.body;
 
-    if(mf.isUndefined(courseId) || mf.isUndefined(skill_id) || mf.isUndefined(name)
-    || mf.isUndefined(description) || mf.isUndefined(startAt) || mf.isUndefined(endAt) || mf.isUndefined(max_participants)
-    || mf.isNotValidSting(courseId) || mf.isNotValidSting(skill_id) || mf.isNotValidSting(name)
-    || mf.isNotValidSting(description) || mf.isValidDate(startAt) || mf.isValidDate(endAt) || mf.isNotValidInteger(max_participants)){
+    const validateError_String = mf.validateFields_String({ courseId,skill_id,name,description });
+    const validateError_Int = mf.validateFields_Int({ max_participants });
+    const validateError_Date = mf.validateFields_Date({ startAt,endAt });
+
+    if(validateError_String !== null || validateError_Int !== null || validateError_Date !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String || validateError_Int || validateError_Date
         });
         return
     }
@@ -220,14 +222,15 @@ async function isupdateDataComplete(req, res, next) {
 async function isvalidCoach(req, res, next) {
     const userId = req.params.userId;
     const {description,experience_years} = req.body;
+    const validateError_String = mf.validateFields_String({ userId,description });
+    const validateError_Int = mf.validateFields_Int({ experience_years });
 
     // [HTTP 400] 資料填寫不完整異常
-    if(mf.isUndefined(userId) || mf.isUndefined(description) || mf.isUndefined(experience_years)
-    || mf.isNotValidSting(userId) || mf.isNotValidInteger(experience_years)){
+    if(validateError_String !== null || validateError_Int !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String || validateError_Int
         });
         return
     }

@@ -9,16 +9,16 @@ const skill_db = dataSource.getRepository('Skill');
 // [HTTP 400] 資料填寫不完整異常
 async function isvalidSkill(req, res, next) {
     const {name} = req.body;
-          
-    if(mf.isUndefined(name) || mf.isNotValidSting(name)){
+    const validateError_String = mf.validateFields_String({ name });
+
+    if(validateError_String !== null){
         resStatus({
         res:res,
         status:400,
-        message:"欄位未填寫正確"
+        message:validateError_String
         });
         return
     }
-
     next();
 }
 
@@ -44,13 +44,13 @@ async function isduplicateData(req, res, next){
 async function isvalidSkillID(req, res, next) {
     // 抓取需要刪除的 ID 資料
     const skill_Id = req.params.skillId;
-    
-    // [HTTP 400] ID資料提供不完整異常
-    if(mf.isUndefined(skill_Id) || mf.isNotValidSting(skill_Id)){
+    const validateError_String = mf.validateFields_String({ skill_Id });
+
+    if(validateError_String !== null){
         resStatus({
         res:res,
         status:400,
-        message:"ID錯誤"
+        message:validateError_String
         });
         return
     }
