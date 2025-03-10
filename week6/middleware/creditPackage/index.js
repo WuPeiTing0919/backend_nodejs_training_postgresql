@@ -29,7 +29,7 @@ async function isvalidCreditPackageID(req, res, next) {
 async function isvalidCreditPackage(req, res, next) {
     const {name,credit_amount,price} = req.body;
     const validateError_String = mf.validateFields_String({ name });
-    const validateError_Integer = mf.validateFields_Integer({ credit_amount,price });
+    const validateError_Integer = mf.validateFields_Int({ credit_amount,price });
     
     if(validateError_String !== null || validateError_Integer !== null){
         resStatus({
