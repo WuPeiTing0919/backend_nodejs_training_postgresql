@@ -1,31 +1,55 @@
-const express = require('express')
+// 主要放置「課程組合包」相關的路由和 API
+const express = require('express');
 
-const router = express.Router()
-const config = require('../config/index')
-const { dataSource } = require('../db/data-source')
-const logger = require('../utils/logger')('Admin')
-const admin = require('../controllers/admin')
-const auth = require('../middlewares/auth')({
-  secret: config.get('secret').jwtSecret,
-  userRepository: dataSource.getRepository('User'),
-  logger
-})
-const isCoach = require('../middlewares/isCoach')
+const router = express.Router();
+const { dataSource } = require('../db/data-source');
+const config = require('../config/index');
+const controller = require('../controllers/admin');
+const logger = require('../utils/logger')('Admin');
 
-router.post('/coaches/courses', auth, isCoach, admin.postCourse)
+// 宣告會使用的 db 資料表
+const user_db = dataSource.getRepository('User');
 
-router.get('/coaches/revenue', auth, isCoach, admin.getCoachRevenue)
+// JWT 的內容
+const auth = require('../middleware/auth')({
+    secret: config.get('secret').jwtSecret,
+    userRepository: user_db,
+    logger
+  })
 
-router.get('/coaches/courses', auth, isCoach, admin.getCoachCourses)
+// middleware 的內容
+const mw = require('../middleware/admin/index');
+const postCourse = [mw.isSDateEDateCompare,mw.isvalidMeeting_url,mw.isvaliduserID,mw.isvalidskillID,mw.postCourse];
+const putCourse = [mw.isSDateEDateCompare,mw.isvalidMeeting_url,mw.isvalidskillID,mw.putCourse];
+const postUsertoCOACH = [mw.isvalidProfileImage_url,mw.isvaliduserID,mw.postUsertoCOACH];
+const getCoachCourse = [mw.isvaliduserID];
+const getCoachCourseDetail = [mw.isvaliduserID,mw.getCoachCourse];
+const putCoachProfile = [mw.isvaliduserID,mw.isvalidProfileImage_url,mw.putCoachProfile];
+const getCoachProfile = [mw.isvaliduserID];
+const getCoachRevenue = [mw.isvaliduserID,mw.getCoachRevenue];
 
-router.get('/coaches/courses/:courseId', auth, admin.getCoachCourseDetail)
+// [POST] 新增教練課程資料
+router.post('/coaches/courses',auth,postCourse, controller.post_addcoachingCourse);
 
-router.put('/coaches/courses/:courseId', auth, admin.putCoachCourseDetail)
+// [PUT] 編輯教練課程資料
+router.put('/coaches/courses/:courseId',auth,putCourse, controller.put_updatecoachingCourse);
 
-router.post('/coaches/:userId', admin.postCoach)
+// [POST] 將使用者新增為教練
+router.post('/coaches/:userId',postUsertoCOACH, controller.post_userAddedcoach);
 
-router.put('/coaches', auth, isCoach, admin.putCoachProfile)
+// [GET] 取得教練自己的課程列表
+router.get('/coaches/courses',auth,getCoachCourse, controller.get_coachOwnCourse);
 
-router.get('/coaches', auth, isCoach, admin.getCoachProfile)
+// [GET] 取得教練自己的課程詳細資料
+router.get('/coaches/courses/:courseId',auth,getCoachCourseDetail, controller.get_coachOwnCourseDetail);
 
-module.exports = router
+// [PUT] 變更教練資料
+router.put('/coaches',auth,putCoachProfile, controller.put_coachProfile);
+
+// [GET] 取得教練自己的詳細資料
+router.get('/coaches',auth,getCoachProfile, controller.get_coachOwnDetails);
+
+// [GET] 取得教練自己的月營收資料
+router.get('/revenue',auth,getCoachRevenue, controller.get_coachRevenueInfo);
+
+module.exports = router;

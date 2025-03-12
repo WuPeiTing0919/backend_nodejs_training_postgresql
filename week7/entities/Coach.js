@@ -1,4 +1,5 @@
-const { EntitySchema } = require('typeorm')
+// 「教練」的資料庫欄位設計
+const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
   name: 'Coach',
@@ -7,12 +8,13 @@ module.exports = new EntitySchema({
     id: {
       primary: true,
       type: 'uuid',
-      generated: 'uuid'
+      generated: 'uuid',
+      nullable: false
     },
     user_id: {
       type: 'uuid',
-      unique: true,
-      nullable: false
+      nullable: false,
+      unique:true
     },
     experience_years: {
       type: 'integer',
@@ -27,31 +29,29 @@ module.exports = new EntitySchema({
       length: 2048,
       nullable: true
     },
-    created_at: {
+    createdAt: {
       type: 'timestamp',
       createDate: true,
+      name: 'created_at',
       nullable: false
     },
-    updated_at: {
+    updatedAt: {
       type: 'timestamp',
-      updateDate: true,
+      createDate: true,
+      name: 'updated_at',
       nullable: false
     }
   },
   relations: {
-    User: {
-      target: 'User',
-      type: 'one-to-one',
+    User : {
+      target: "User",
+      type: "one-to-one",
+      inverseSide : "Coach",
       joinColumn: {
         name: 'user_id',
         referencedColumnName: 'id',
-        foreignKeyConstraintName: 'coach_user_id_fk'
+        foreignKeyConstraintName: 'user_coach_id_fk'
       }
-    },
-    CoachLinkSkill: {
-      target: 'CoachLinkSkill',
-      type: 'one-to-many',
-      inverseSide: 'Coach'
     }
   }
-})
+});

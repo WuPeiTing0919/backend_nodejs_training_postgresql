@@ -1,4 +1,5 @@
-const { EntitySchema } = require('typeorm')
+// 「課程組合包」的資料庫欄位設計
+const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
   name: 'CreditPackage',
@@ -33,4 +34,4 @@ module.exports = new EntitySchema({
       nullable: false
     }
   }
-})
+});

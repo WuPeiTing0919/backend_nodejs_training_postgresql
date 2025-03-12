@@ -1,544 +1,400 @@
 const dayjs = require('dayjs')
 const utc = require('dayjs/plugin/utc')
+const { dataSource } = require('../db/data-source');
+const logger = require('../utils/logger')('Admin');
+const resStatus = require('../utils/resStatus');
 
-const { dataSource } = require('../db/data-source')
-const logger = require('../utils/logger')('AdminController')
+// 宣告會使用的 db 資料表
+const user_db = dataSource.getRepository('User');
+const coach_db = dataSource.getRepository('Coach');
+const course_db = dataSource.getRepository('Course');
+const courseBooking_db = dataSource.getRepository('CourseBooking');
+const coachLinkSkill_db = dataSource.getRepository('CoachLinkSkill');
+const creditPackage_db = dataSource.getRepository('CreditPackage');
 
-dayjs.extend(utc)
-const monthMap = {
-  january: 1,
-  february: 2,
-  march: 3,
-  april: 4,
-  may: 5,
-  june: 6,
-  july: 7,
-  august: 8,
-  september: 9,
-  october: 10,
-  november: 11,
-  december: 12
-}
+// [POST] 新增教練課程資料
+async function post_addcoachingCourse(req, res, next){
+    try{
+        const { id : user_id } = req.user;
+        const {skill_id,name,description,
+                start_at : startAt,end_at : endAt,
+                max_participants,meeting_url} = req.body;
 
-function isUndefined (value) {
-  return value === undefined
-}
+        // 上傳數據
+        const newPost = course_db.create({ 
+            user_id,
+            skill_id,
+            name,
+            description,
+            startAt,
+            endAt,
+            max_participants,
+            meeting_url
+        });
+        const saveCoach = await course_db.save(newPost);
 
-function isNotValidSting (value) {
-  return typeof value !== 'string' || value.trim().length === 0 || value === ''
-}
-
-function isNotValidInteger (value) {
-  return typeof value !== 'number' || value < 0 || value % 1 !== 0
-}
-
-async function postCourse (req, res, next) {
-  try {
-    const { id } = req.user
-    const {
-      skill_id: skillId, name, description, start_at: startAt, end_at: endAt,
-      max_participants: maxParticipants, meeting_url: meetingUrl
-    } = req.body
-    if (isUndefined(skillId) || isNotValidSting(skillId) ||
-    isUndefined(name) || isNotValidSting(name) ||
-    isUndefined(description) || isNotValidSting(description) ||
-    isUndefined(startAt) || isNotValidSting(startAt) ||
-    isUndefined(endAt) || isNotValidSting(endAt) ||
-    isUndefined(maxParticipants) || isNotValidInteger(maxParticipants) ||
-    isUndefined(meetingUrl) || isNotValidSting(meetingUrl) || !meetingUrl.startsWith('https')) {
-      logger.warn('欄位未填寫正確')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
+        // [HTTP 201] 呈現上傳後資料
+        resStatus({
+            res:res,
+            status:201,
+            dbdata:{
+                course: {
+                    id: saveCoach.id,
+                    user_id : saveCoach.user_id,
+                    skill_id : saveCoach.skill_id,
+                    name : saveCoach.name,
+                    description : saveCoach.description,
+                    start_at : saveCoach.startAt,
+                    end_at : saveCoach.endAt,
+                    max_participants : saveCoach.max_participants,
+                    meeting_url : saveCoach.meeting_url,
+                    created_at: saveCoach.createdAt,
+                    updated_at: saveCoach.updatedAt
+                }
+            }
+        });
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
     }
-    const userRepository = dataSource.getRepository('User')
-    const existingUser = await userRepository.findOne({
-      select: ['id', 'name', 'role'],
-      where: { id }
-    })
-    if (!existingUser) {
-      logger.warn('使用者不存在')
-      res.status(400).json({
-        status: 'failed',
-        message: '使用者不存在'
-      })
-      return
-    }
-    const courseRepo = dataSource.getRepository('Course')
-    const newCourse = courseRepo.create({
-      user_id: id,
-      skill_id: skillId,
-      name,
-      description,
-      start_at: startAt,
-      end_at: endAt,
-      max_participants: maxParticipants,
-      meeting_url: meetingUrl
-    })
-    const savedCourse = await courseRepo.save(newCourse)
-    const course = await courseRepo.findOne({
-      where: { id: savedCourse.id }
-    })
-    res.status(201).json({
-      status: 'success',
-      data: {
-        course
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
 }
 
-async function getCoachRevenue (req, res, next) {
-  try {
-    const { id } = req.user
-    const { month } = req.query
-    if (isUndefined(month) || !Object.prototype.hasOwnProperty.call(monthMap, month)) {
-      logger.warn('欄位未填寫正確')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
+// [PUT] 編輯教練課程資料
+async function put_updatecoachingCourse(req, res, next){
+    try{
+        const courseId = req.params.courseId;
+
+        const saveCoach = await course_db.findOneBy({"id" : courseId});
+        // [HTTP 200] 呈現更新後資料
+        resStatus({
+            res:res,
+            status:200,
+            dbdata:{
+                course: {
+                    id: saveCoach.id,
+                    user_id : saveCoach.user_id,
+                    skill_id : saveCoach.skill_id,
+                    name : saveCoach.name,
+                    description : saveCoach.description,
+                    start_at : saveCoach.startAt,
+                    end_at : saveCoach.endAt,
+                    max_participants : saveCoach.max_participants,
+                    meeting_url : saveCoach.meeting_url,
+                    created_at: saveCoach.createdAt,
+                    updated_at: saveCoach.updatedAt
+                }
+            }
+        });
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
     }
-    const courseRepo = dataSource.getRepository('Course')
-    const courses = await courseRepo.find({
-      select: ['id'],
-      where: { user_id: id }
-    })
-    const courseIds = courses.map(course => course.id)
-    if (courseIds.length === 0) {
-      res.status(200).json({
-        status: 'success',
-        data: {
-          total: {
-            revenue: 0,
-            participants: 0,
-            course_count: 0
-          }
+}
+
+// [POST] 將使用者新增為教練
+async function post_userAddedcoach(req, res, next){
+    try{
+        const userId = req.params.userId;
+        const {description,experience_years,profile_image_url} = req.body;
+
+        // 上傳數據
+        const newPost = coach_db.create({ 
+            "user_id" : userId,
+            experience_years,
+            description,
+            profile_image_url
+        });
+        const saveCoach = await coach_db.save(newPost);
+        const saveUser = await user_db.findOneBy({"id" : userId});
+
+        // [HTTP 201] 呈現上傳後資料
+        resStatus({
+            res:res,
+            status:201,
+            dbdata:{ 
+                users: {
+                    name : saveUser.name,
+                    role : saveUser.role
+                },
+                coach : {
+                    id : saveCoach.id,
+                    user_id : saveCoach.user_id,
+                    experience_years : saveCoach.experience_years,
+                    description : saveCoach.description,
+                    profile_image_url : saveCoach.profile_image_url,
+                    created_at: saveCoach.createdAt,
+                    updated_at: saveCoach.updatedAt
+                }
+            }
+        });
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
+    }
+}
+
+// [GET] 取得教練自己的課程列表
+async function get_coachOwnCourse(req, res, next){
+    try{
+        const {id} = req.user;
+
+        const courseBooking_data = await courseBooking_db
+            .createQueryBuilder("CourseBooking")
+            .innerJoinAndSelect("CourseBooking.Course", "Course")  
+            .select([
+                "Course.id",
+                `Case When Course.startAt > NOW() THEN 'PENDING'
+                      When Course.endAt > NOW() THEN 'PROGRESS'
+                      When Course.endAt < NOW() THEN 'COMPLETED' END AS status`,
+                "Course.name",
+                "Course.start_at",
+                "Course.end_at",
+                "Course.max_participants",
+                "COUNT(CourseBooking.id) AS participants"
+            ])
+            .where("Course.user_id = :id", { id })
+            .andWhere("CourseBooking.cancelled_at is null")
+            .groupBy("Course.id")
+            .addGroupBy("Course.name")
+            .addGroupBy("Course.start_at")
+            .addGroupBy("Course.end_at")
+            .addGroupBy("Course.max_participants")
+            .getRawMany();
+        
+        const formattedData = courseBooking_data.map(cb => ({
+            id : cb.Course_id,
+            status : cb.status,
+            name: cb.Course_name,
+            start_at:cb.start_at,
+            end_at:cb.end_at,
+            max_participants:cb.Course_max_participants,
+            participants:cb.participants
+        }));
+
+        // [HTTP 200] 呈現資料
+        resStatus({
+            res:res,
+            status:200,
+            dbdata:formattedData
+        });
+
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
+    }
+}
+
+// [GET] 取得教練自己的課程詳細資料
+async function get_coachOwnCourseDetail(req, res, next){
+    try{
+        const {id} = req.user;
+        const courseId = req.params.courseId;
+
+        // 查詢資料
+        const course_data = await course_db
+            .createQueryBuilder("Course")
+            .innerJoinAndSelect("Course.Skill", "Skill")   
+            .where("Course.id = :id", { id : courseId })
+            .getMany();  // 執行查詢並返回結果
+
+        const formattedData = course_data.map(cb => ({
+            id : cb.id,
+            skill_name : cb.Skill.name,
+            name: cb.name,
+            description:cb.description,
+            start_at:cb.startAt,
+            end_at:cb.endAt,
+            max_participants:cb.max_participants,
+        }));
+
+        // [HTTP 200] 呈現資料
+        resStatus({
+            res:res,
+            status:200,
+            dbdata:formattedData
+        });
+
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
+    }
+}
+
+// [PUT] 變更教練資料
+async function put_coachProfile(req, res, next){
+    try{
+        const {id} = req.user;
+        const {experience_years,description,profile_image_url,skill_ids} = req.body;
+
+        await coach_db.update(
+            {"user_id" : id},
+            {experience_years,description,profile_image_url}
+        );
+
+        // 上傳數據
+        const coach = await coach_db.findOneBy({"user_id" : id});
+        await coachLinkSkill_db.delete({"coach_id" : coach.id});
+        for(let i = 0 ; i < skill_ids.length; i++){
+            const newPost = coachLinkSkill_db.create({ 
+                "coach_id" : coach.id,
+                "skill_id" : skill_ids[i]
+            });
+            await coachLinkSkill_db.save(newPost);
         }
-      })
-      return
+
+        // 查詢資料
+        const coachLinkSkill_data = await coachLinkSkill_db
+            .createQueryBuilder("CoachLinkSkill")
+            .innerJoinAndSelect("CoachLinkSkill.Coach", "Coach")   
+            .where("Coach.id = :id", { id : coach.id })
+            .getMany();  // 執行查詢並返回結果
+
+        const formattedData = coachLinkSkill_data.map(cs => (cs.skill_id));
+
+        // [HTTP 200] 呈現資料
+        resStatus({
+            res:res,
+            status:200,
+            dbdata : {
+                experience_years : coachLinkSkill_data[0].Coach.experience_years,
+                description : coachLinkSkill_data[0].Coach.description,
+                profile_image_url : coachLinkSkill_data[0].Coach.profile_image_url,
+                skill_id : formattedData
+            }
+        });
+
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
     }
-    const courseBookingRepo = dataSource.getRepository('CourseBooking')
-    const year = new Date().getFullYear()
-    const calculateStartAt = dayjs(`${year}-${month}-01`).startOf('month').toISOString()
-    const calculateEndAt = dayjs(`${year}-${month}-01`).endOf('month').toISOString()
-    const courseCount = await courseBookingRepo.createQueryBuilder('course_booking')
-      .select('COUNT(*)', 'count')
-      .where('course_id IN (:...ids)', { ids: courseIds })
-      .andWhere('cancelled_at IS NULL')
-      .andWhere('created_at >= :startDate', { startDate: calculateStartAt })
-      .andWhere('created_at <= :endDate', { endDate: calculateEndAt })
-      .getRawOne()
-    const participants = await courseBookingRepo.createQueryBuilder('course_booking')
-      .select('COUNT(DISTINCT(user_id))', 'count')
-      .where('course_id IN (:...ids)', { ids: courseIds })
-      .andWhere('cancelled_at IS NULL')
-      .andWhere('created_at >= :startDate', { startDate: calculateStartAt })
-      .andWhere('created_at <= :endDate', { endDate: calculateEndAt })
-      .getRawOne()
-    const totalCreditPackage = await dataSource.getRepository('CreditPackage').createQueryBuilder('credit_package')
-      .select('SUM(credit_amount)', 'total_credit_amount')
-      .addSelect('SUM(price)', 'total_price')
-      .getRawOne()
-    const perCreditPrice = totalCreditPackage.total_price / totalCreditPackage.total_credit_amount
-    const totalRevenue = courseCount.count * perCreditPrice
-    res.status(200).json({
-      status: 'success',
-      data: {
-        total: {
-          revenue: Math.floor(totalRevenue),
-          participants: parseInt(participants.count, 10),
-          course_count: parseInt(courseCount.count, 10)
-        }
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
 }
 
-async function getCoachCourses (req, res, next) {
-  try {
-    const { id } = req.user
-    const courses = await dataSource.getRepository('Course').find({
-      select: {
-        id: true,
-        name: true,
-        start_at: true,
-        end_at: true,
-        max_participants: true
-      },
-      where: {
-        user_id: id
-      }
-    })
-    const courseIds = courses.map((course) => course.id)
-    const coursesParticipant = await dataSource.getRepository('CourseBooking')
-      .createQueryBuilder('course_booking')
-      .select('course_id')
-      .addSelect('COUNT(course_id)', 'count')
-      .where('course_id IN (:...courseIds)', { courseIds })
-      .andWhere('cancelled_at is null')
-      .groupBy('course_id')
-      .getRawMany()
-    logger.info(`coursesParticipant: ${JSON.stringify(coursesParticipant, null, 1)}`)
-    const now = new Date()
-    res.status(200).json({
-      status: 'success',
-      data: courses.map((course) => {
-        const startAt = new Date(course.start_at)
-        const endAt = new Date(course.end_at)
-        let status = '尚未開始'
-        if (startAt < now) {
-          status = '進行中'
-          if (endAt < now) {
-            status = '已結束'
-          }
-        }
-        const courseParticipant = coursesParticipant.find((courseParticipant) => courseParticipant.course_id === course.id)
-        return {
-          id: course.id,
-          name: course.name,
-          status,
-          start_at: course.start_at,
-          end_at: course.end_at,
-          max_participants: course.max_participants,
-          participants: courseParticipant ? courseParticipant.count : 0
-        }
-      })
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
+// [GET] 取得教練自己的詳細資料
+async function get_coachOwnDetails(req, res, next){
+    try{
+        const {id} = req.user;
+
+        const coach = await coach_db.findOneBy({"user_id" : id});
+        // 查詢資料
+        const coachLinkSkill_data = await coachLinkSkill_db
+            .createQueryBuilder("CoachLinkSkill")
+            .innerJoinAndSelect("CoachLinkSkill.Coach", "Coach")   
+            .where("Coach.id = :id", { id : coach.id })
+            .getMany();  // 執行查詢並返回結果
+
+        const formattedData = coachLinkSkill_data.map(cs => (cs.skill_id));
+
+        // [HTTP 200] 呈現資料
+        resStatus({
+            res:res,
+            status:200,
+            dbdata : {
+                id : coach.id,
+                experience_years : coachLinkSkill_data[0].Coach.experience_years,
+                description : coachLinkSkill_data[0].Coach.description,
+                profile_image_url : coachLinkSkill_data[0].Coach.profile_image_url,
+                skill_id : formattedData
+            }
+        });
+
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
+    }
 }
 
-async function getCoachCourseDetail (req, res, next) {
-  try {
-    const { id } = req.user
-    const course = await dataSource.getRepository('Course').findOne({
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        start_at: true,
-        end_at: true,
-        max_participants: true,
-        meeting_url: true,
-        Skill: {
-          name: true
+// [GET] 取得教練自己的月營收資料
+async function get_coachRevenueInfo(req, res, next){
+    try{
+        const {id} = req.user;
+        const month = req.query.month;
+
+        const courses = await course_db.find({where: { user_id: id }});
+        const courseIds = courses.map(course => course.id)
+        if (courseIds.length === 0) {
+            resStatus({
+                res:res,
+                status:200,
+                dbdata : {
+                    total: {
+                        revenue: 0,
+                        participants: 0,
+                        course_count: 0
+                    }
+                }
+            });
+            return
         }
-      },
-      where: {
-        user_id: id
-      },
-      relations: {
-        Skill: true
-      }
-    })
-    res.status(200).json({
-      status: 'success',
-      data: {
-        id: course.id,
-        name: course.name,
-        description: course.description,
-        start_at: course.start_at,
-        end_at: course.end_at,
-        max_participants: course.max_participants,
-        skill_name: course.Skill.name,
-        meeting_url: course.meeting_url
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
-}
 
-async function putCoachCourseDetail (req, res, next) {
-  try {
-    const { id } = req.user
-    const { courseId } = req.params
-    const {
-      skill_id: skillId, name, description, start_at: startAt, end_at: endAt,
-      max_participants: maxParticipants, meeting_url: meetingUrl
-    } = req.body
-    if (isNotValidSting(courseId) ||
-      isUndefined(skillId) || isNotValidSting(skillId) ||
-      isUndefined(name) || isNotValidSting(name) ||
-      isUndefined(description) || isNotValidSting(description) ||
-      isUndefined(startAt) || isNotValidSting(startAt) ||
-      isUndefined(endAt) || isNotValidSting(endAt) ||
-      isUndefined(maxParticipants) || isNotValidInteger(maxParticipants) ||
-      isUndefined(meetingUrl) || isNotValidSting(meetingUrl) || !meetingUrl.startsWith('https')) {
-      logger.warn('欄位未填寫正確')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
-    }
-    const courseRepo = dataSource.getRepository('Course')
-    const existingCourse = await courseRepo.findOne({
-      where: { id: courseId, user_id: id }
-    })
-    if (!existingCourse) {
-      logger.warn('課程不存在')
-      res.status(400).json({
-        status: 'failed',
-        message: '課程不存在'
-      })
-      return
-    }
-    const updateCourse = await courseRepo.update({
-      id: courseId
-    }, {
-      skill_id: skillId,
-      name,
-      description,
-      start_at: startAt,
-      end_at: endAt,
-      max_participants: maxParticipants,
-      meeting_url: meetingUrl
-    })
-    if (updateCourse.affected === 0) {
-      logger.warn('更新課程失敗')
-      res.status(400).json({
-        status: 'failed',
-        message: '更新課程失敗'
-      })
-      return
-    }
-    const savedCourse = await courseRepo.findOne({
-      where: { id: courseId }
-    })
-    res.status(200).json({
-      status: 'success',
-      data: {
-        course: savedCourse
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
-}
+        const year = new Date().getFullYear();
+        const calculateStartAt = dayjs(`${year}-${month}-01`).startOf('month').toISOString();
+        const calculateEndAt = dayjs(`${year}-${month}-01`).endOf('month').toISOString();
 
-async function postCoach (req, res, next) {
-  try {
-    const { userId } = req.params
-    const { experience_years: experienceYears, description, profile_image_url: profileImageUrl = null } = req.body
-    if (isUndefined(experienceYears) || isNotValidInteger(experienceYears) || isUndefined(description) || isNotValidSting(description)) {
-      logger.warn('欄位未填寫正確')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
-    }
-    if (profileImageUrl && !isNotValidSting(profileImageUrl) && !profileImageUrl.startsWith('https')) {
-      logger.warn('大頭貼網址錯誤')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
-    }
-    const userRepository = dataSource.getRepository('User')
-    const existingUser = await userRepository.findOne({
-      select: ['id', 'name', 'role'],
-      where: { id: userId }
-    })
-    if (!existingUser) {
-      logger.warn('使用者不存在')
-      res.status(400).json({
-        status: 'failed',
-        message: '使用者不存在'
-      })
-      return
-    } else if (existingUser.role === 'COACH') {
-      logger.warn('使用者已經是教練')
-      res.status(409).json({
-        status: 'failed',
-        message: '使用者已經是教練'
-      })
-      return
-    }
-    const coachRepo = dataSource.getRepository('Coach')
-    const newCoach = coachRepo.create({
-      user_id: userId,
-      experience_years: experienceYears,
-      description,
-      profile_image_url: profileImageUrl
-    })
-    const updatedUser = await userRepository.update({
-      id: userId,
-      role: 'USER'
-    }, {
-      role: 'COACH'
-    })
-    if (updatedUser.affected === 0) {
-      logger.warn('更新使用者失敗')
-      res.status(400).json({
-        status: 'failed',
-        message: '更新使用者失敗'
-      })
-      return
-    }
-    const savedCoach = await coachRepo.save(newCoach)
-    const savedUser = await userRepository.findOne({
-      select: ['name', 'role'],
-      where: { id: userId }
-    })
-    res.status(201).json({
-      status: 'success',
-      data: {
-        user: savedUser,
-        coach: savedCoach
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
-}
+        const courseCount = await courseBooking_db
+            .createQueryBuilder('CourseBooking')
+            .select('COUNT(*)', 'count')
+            .where('course_id IN (:...ids)', { ids: courseIds })
+            .andWhere('cancelled_at IS NULL')
+            .andWhere('created_at >= :startDate', { startDate: calculateStartAt })
+            .andWhere('created_at <= :endDate', { endDate: calculateEndAt })
+            .getRawOne();
 
-async function putCoachProfile (req, res, next) {
-  try {
-    const { id } = req.user
-    const {
-      experience_years: experienceYears,
-      description,
-      profile_image_url: profileImageUrl = null,
-      skill_ids: skillIds
-    } = req.body
-    if (isUndefined(experienceYears) || isNotValidInteger(experienceYears) ||
-      isUndefined(description) || isNotValidSting(description) ||
-      isUndefined(profileImageUrl) || isNotValidSting(profileImageUrl) ||
-      !profileImageUrl.startsWith('https') ||
-      isUndefined(skillIds) || !Array.isArray(skillIds)) {
-      logger.warn('欄位未填寫正確')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
-    }
-    if (skillIds.length === 0 || skillIds.every(skill => isUndefined(skill) || isNotValidSting(skill))) {
-      logger.warn('欄位未填寫正確')
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
-    }
-    const coachRepo = dataSource.getRepository('Coach')
-    const coach = await coachRepo.findOne({
-      select: ['id'],
-      where: { user_id: id }
-    })
-    await coachRepo.update({
-      id: coach.id
-    }, {
-      experience_years: experienceYears,
-      description,
-      profile_image_url: profileImageUrl
-    })
-    const coachLinkSkillRepo = dataSource.getRepository('CoachLinkSkill')
-    const newCoachLinkSkill = skillIds.map(skill => ({
-      coach_id: coach.id,
-      skill_id: skill
-    }))
-    await coachLinkSkillRepo.delete({ coach_id: coach.id })
-    const insert = await coachLinkSkillRepo.insert(newCoachLinkSkill)
-    logger.info(`newCoachLinkSkill: ${JSON.stringify(newCoachLinkSkill, null, 1)}`)
-    logger.info(`insert: ${JSON.stringify(insert, null, 1)}`)
-    const result = await coachRepo.find({
-      select: {
-        id: true,
-        experience_years: true,
-        description: true,
-        profile_image_url: true,
-        CoachLinkSkill: {
-          skill_id: true
-        }
-      },
-      where: { id: coach.id },
-      relations: {
-        CoachLinkSkill: true
-      }
-    })
-    logger.info(`result: ${JSON.stringify(result, null, 1)}`)
-    res.status(200).json({
-      status: 'success',
-      data: {
-        id: result[0].id,
-        experience_years: result[0].experience_years,
-        description: result[0].description,
-        profile_image_url: result[0].profile_image_url,
-        skill_ids: result[0].CoachLinkSkill.map(skill => skill.skill_id)
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
-}
+        const participants = await courseBooking_db
+            .createQueryBuilder('course_booking')
+            .select('COUNT(DISTINCT(user_id))', 'count')
+            .where('course_id IN (:...ids)', { ids: courseIds })
+            .andWhere('cancelled_at IS NULL')
+            .andWhere('created_at >= :startDate', { startDate: calculateStartAt })
+            .andWhere('created_at <= :endDate', { endDate: calculateEndAt })
+            .getRawOne();
+            
+        const totalCreditPackage = await creditPackage_db
+            .createQueryBuilder('CreditPackage')
+            .select('SUM(credit_amount)', 'total_credit_amount')
+            .addSelect('SUM(price)', 'total_price')
+            .getRawOne();
 
-async function getCoachProfile (req, res, next) {
-  try {
-    const { id } = req.user
-    const coachRepo = dataSource.getRepository('Coach')
-    const coach = await coachRepo.findOne({
-      select: ['id'],
-      where: { user_id: id }
-    })
-    const result = await dataSource.getRepository('Coach').findOne({
-      select: {
-        id: true,
-        experience_years: true,
-        description: true,
-        profile_image_url: true,
-        CoachLinkSkill: {
-          skill_id: true
-        }
-      },
-      where: { id: coach.id },
-      relations: {
-        CoachLinkSkill: true
-      }
-    })
-    logger.info(`result: ${JSON.stringify(result, null, 1)}`)
-    res.status(200).json({
-      status: 'success',
-      data: {
-        id: result.id,
-        experience_years: result.experience_years,
-        description: result.description,
-        profile_image_url: result.profile_image_url,
-        skill_ids: result.CoachLinkSkill.length > 0 ? result.CoachLinkSkill.map(skill => skill.skill_id) : result.CoachLinkSkill
-      }
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
+        const perCreditPrice = totalCreditPackage.total_price / totalCreditPackage.total_credit_amount
+        const totalRevenue = courseCount.count * perCreditPrice
+        resStatus({
+            res:res,
+            status:200,
+            dbdata : {
+                total: {
+                    revenue: Math.floor(totalRevenue),
+                    participants: parseInt(participants.count, 10),
+                    course_count: parseInt(courseCount.count, 10)
+                }
+            }
+        });
+
+        // [HTTP 200] 呈現資料
+        resStatus({
+            res:res,
+            status:200
+        });
+
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
+    }
 }
 
 module.exports = {
-  postCourse,
-  getCoachRevenue,
-  getCoachCourses,
-  getCoachCourseDetail,
-  putCoachCourseDetail,
-  postCoach,
-  putCoachProfile,
-  getCoachProfile
+    post_addcoachingCourse,
+    put_updatecoachingCourse,
+    post_userAddedcoach,
+    get_coachOwnCourse,
+    get_coachOwnCourseDetail,
+    put_coachProfile,
+    get_coachOwnDetails,
+    get_coachRevenueInfo
 }

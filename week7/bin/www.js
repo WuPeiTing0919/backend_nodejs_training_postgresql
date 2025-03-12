@@ -1,11 +1,7 @@
-#!/usr/bin/env node
 
-/**
- * Module dependencies.
- */
 const http = require('http');
 const config = require('../config/index');
-const app = require('../app'); // 導入 app.js
+const app = require('../app');
 const logger = require('../utils/logger')('www');
 const { dataSource } = require('../db/data-source');
 
@@ -15,13 +11,13 @@ app.set('port', port);
 
 const server = http.createServer(app);
 
-function onError(error) {
+function onError (error) {
   if (error.syscall !== 'listen') {
     throw error;
   }
   const bind = typeof port === 'string'
     ? `Pipe ${port}`
-    : `Port ${port}`;
+    : `Port ${port}`
   // handle specific listen errors
   switch (error.code) {
     case 'EACCES':
@@ -48,4 +44,4 @@ server.listen(port, async () => {
     logger.error(`資料庫連線失敗: ${error.message}`);
     process.exit(1);
   }
-});
+})

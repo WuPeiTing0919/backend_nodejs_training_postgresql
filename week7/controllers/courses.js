@@ -1,173 +1,95 @@
-const { IsNull } = require('typeorm')
-const { dataSource } = require('../db/data-source')
-const logger = require('../utils/logger')('CoursesController')
+const { dataSource } = require('../db/data-source');
+const logger = require('../utils/logger')('Course');
+const resStatus = require('../utils/resStatus');
 
-async function getAllCourses (req, res, next) {
-  try {
-    const courses = await dataSource.getRepository('Course').find({
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        start_at: true,
-        end_at: true,
-        max_participants: true,
-        User: {
-          name: true
-        },
-        Skill: {
-          name: true
-        }
-      },
-      relations: {
-        User: true,
-        Skill: true
-      }
-    })
-    res.status(200).json({
-      status: 'success',
-      data: courses.map((course) => {
-        return {
-          id: course.id,
-          name: course.name,
-          description: course.description,
-          start_at: course.start_at,
-          end_at: course.end_at,
-          max_participants: course.max_participants,
-          coach_name: course.User.name,
-          skill_name: course.Skill.name
-        }
-      })
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
+const course_db = dataSource.getRepository('Course');
+const courseBooking_db = dataSource.getRepository('CourseBooking');
+
+// [GET] 取得課程列表
+async function get_coursesData(req, res, next){
+    try{
+
+        // 查詢資料
+        const course_data = await course_db
+            .createQueryBuilder("Course")
+            .innerJoinAndSelect("Course.User", "User")  
+            .innerJoinAndSelect("Course.Skill", "Skill")  
+            .select(["Course.id", "User.name","Skill.name","Course.name"
+                    ,"Course.description","Course.startAt","Course.endAt","Course.max_participants"
+            ]) 
+            .getMany();  // 執行查詢並返回結果
+    
+        const formattedData = course_data.map(coach => ({
+            id: coach.id,
+			      coach_name : coach.User.name,
+			      skill_name : coach.Skill.name,
+			      name : coach.name,
+			      description : coach.description,
+			      start_at : coach.startAt,
+			      end_at : coach.endAt,
+			      max_participants : coach.max_participants
+        }));
+
+        // [HTTP 200] 呈現資料
+        resStatus({
+          res:res,
+          status:200,
+          dbdata:formattedData
+        });
+        
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
+    }
 }
 
-async function postCourseBooking (req, res, next) {
-  try {
-    const { id } = req.user
-    const { courseId } = req.params
-    const courseRepo = dataSource.getRepository('Course')
-    const course = await courseRepo.findOne({
-      where: {
-        id: courseId
-      }
-    })
-    if (!course) {
-      res.status(400).json({
-        status: 'failed',
-        message: 'ID錯誤'
-      })
-      return
+// [POST] 報名課程
+async function post_registerCourse(req, res, next){
+    try {
+      const {id} = req.user;
+      const courseId = req.params.courseId;
+
+      // 上傳數據
+      const newPost = courseBooking_db.create({ 
+        user_id : id,
+        course_id : courseId
+      });
+      await courseBooking_db.save(newPost);
+
+      // [HTTP 200] 呈現資料
+      resStatus({
+        res:res,
+        status:200,
+        dbdata:[]
+      });
+
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
     }
-    const creditPurchaseRepo = dataSource.getRepository('CreditPurchase')
-    const courseBookingRepo = dataSource.getRepository('CourseBooking')
-    const userCourseBooking = await courseBookingRepo.findOne({
-      where: {
-        user_id: id,
-        course_id: courseId
-      }
-    })
-    if (userCourseBooking) {
-      res.status(400).json({
-        status: 'failed',
-        message: '已經報名過此課程'
-      })
-      return
-    }
-    const userCredit = await creditPurchaseRepo.sum('purchased_credits', {
-      user_id: id
-    })
-    const userUsedCredit = await courseBookingRepo.count({
-      where: {
-        user_id: id,
-        cancelledAt: IsNull()
-      }
-    })
-    const courseBookingCount = await courseBookingRepo.count({
-      where: {
-        course_id: courseId,
-        cancelledAt: IsNull()
-      }
-    })
-    if (userUsedCredit >= userCredit) {
-      res.status(400).json({
-        status: 'failed',
-        message: '已無可使用堂數'
-      })
-      return
-    } else if (courseBookingCount >= course.max_participants) {
-      res.status(400).json({
-        status: 'failed',
-        message: '已達最大參加人數，無法參加'
-      })
-      return
-    }
-    const newCourseBooking = await courseBookingRepo.create({
-      user_id: id,
-      course_id: courseId
-    })
-    await courseBookingRepo.save(newCourseBooking)
-    res.status(201).json({
-      status: 'success',
-      data: null
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
 }
 
-async function deleteCourseBooking (req, res, next) {
-  try {
-    const { id } = req.user
-    const { courseId } = req.params
-    const courseBookingRepo = dataSource.getRepository('CourseBooking')
-    const userCourseBooking = await courseBookingRepo.findOne({
-      where: {
-        user_id: id,
-        course_id: courseId,
-        cancelledAt: IsNull()
-      }
-    })
-    if (!userCourseBooking) {
-      res.status(400).json({
-        status: 'failed',
-        message: 'ID錯誤'
-      })
-      return
+// [DELETE] 取消課程
+async function delete_cancelCourse(req, res, next){
+    try {
+      // [HTTP 200] 呈現資料
+      resStatus({
+        res:res,
+        status:200,
+        dbdata:[]
+      });
+  
+    }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
     }
-    const updateResult = await courseBookingRepo.update(
-      {
-        user_id: id,
-        course_id: courseId,
-        cancelledAt: IsNull()
-      },
-      {
-        cancelledAt: new Date().toISOString()
-      }
-    )
-    if (updateResult.affected === 0) {
-      res.status(400).json({
-        status: 'failed',
-        message: '取消失敗'
-      })
-      return
-    }
-    res.status(200).json({
-      status: 'success',
-      data: null
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
   }
-}
 
 module.exports = {
-  getAllCourses,
-  postCourseBooking,
-  deleteCourseBooking
+    get_coursesData,
+    post_registerCourse,
+    delete_cancelCourse
 }

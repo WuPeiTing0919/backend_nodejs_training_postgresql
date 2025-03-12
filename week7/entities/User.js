@@ -1,4 +1,6 @@
-const { EntitySchema } = require('typeorm')
+// 「使用者」的資料庫欄位設計
+const { EntitySchema } = require('typeorm');
+const { password } = require('../config/db');
 
 module.exports = new EntitySchema({
   name: 'User',
@@ -7,7 +9,8 @@ module.exports = new EntitySchema({
     id: {
       primary: true,
       type: 'uuid',
-      generated: 'uuid'
+      generated: 'uuid',
+      nullable: false
     },
     name: {
       type: 'varchar',
@@ -18,7 +21,7 @@ module.exports = new EntitySchema({
       type: 'varchar',
       length: 320,
       nullable: false,
-      unique: true
+      unique:true
     },
     role: {
       type: 'varchar',
@@ -29,17 +32,20 @@ module.exports = new EntitySchema({
       type: 'varchar',
       length: 72,
       nullable: false,
+      // 機敏性資料，預設無法查詢該欄位
       select: false
     },
-    created_at: {
+    createdAt: {
       type: 'timestamp',
       createDate: true,
+      name: 'created_at',
       nullable: false
     },
-    updated_at: {
+    updatedAt: {
       type: 'timestamp',
-      updateDate: true,
+      createDate: true,
+      name: 'updated_at',
       nullable: false
     }
   }
-})
+});

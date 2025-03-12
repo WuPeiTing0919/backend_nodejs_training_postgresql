@@ -1,95 +1,78 @@
-const { dataSource } = require('../db/data-source')
-const logger = require('../utils/logger')('SkillController')
+const { dataSource } = require('../db/data-source');
+const resStatus = require('../utils/resStatus');
+const logger = require('../utils/logger')('Skill');
 
-function isUndefined (value) {
-  return value === undefined
-}
+// 宣告會使用的 db 資料表
+const skill_db = dataSource.getRepository('Skill');
 
-function isNotValidSting (value) {
-  return typeof value !== 'string' || value.trim().length === 0 || value === ''
-}
-
-async function getAll (req, res, next) {
-  try {
-    const skills = await dataSource.getRepository('Skill').find({
-      select: ['id', 'name']
-    })
-    res.status(200).json({
-      status: 'success',
-      data: skills
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
-}
-
-async function post (req, res, next) {
-  try {
-    const { name } = req.body
-    if (isUndefined(name) || isNotValidSting(name)) {
-      res.status(400).json({
-        status: 'failed',
-        message: '欄位未填寫正確'
-      })
-      return
+// [GET] 取得教練專長列表
+async function get_coachingSkill(req, res, next){
+    try{
+        // 查詢資料
+        const skill_data = await skill_db.find({
+          select: ["id", "name"]
+        });
+    
+        // [HTTP 200] 呈現資料
+        resStatus({
+          res:res,
+          status:200,
+          dbdata:skill_data
+        });
+    }catch(error){
+      // [HTTP 500] 伺服器異常
+      logger.error(error);
+      next(error);
     }
-    const skillRepo = dataSource.getRepository('Skill')
-    const existSkill = await skillRepo.findOne({
-      where: {
-        name
+}
+
+// [POST] 新增教練專長
+async function post_addcoachingSkill(req, res, next){
+    try{
+        const {name} = req.body;
+
+        // 上傳數據
+        const newPost = skill_db.create({ 
+          name
+         });
+         const skill_data = await skill_db.save(newPost);
+        
+        // [HTTP 200] 呈現上傳後資料
+        resStatus({
+          res:res,
+          status:200,
+          dbdata:{
+            id : skill_data.id,
+            name : skill_data.name
+          }
+        });
+
+      }catch(error){
+        // [HTTP 500] 伺服器異常
+        logger.error(error);
+        next(error);
       }
-    })
-    if (existSkill) {
-      res.status(409).json({
-        status: 'failed',
-        message: '資料重複'
-      })
-      return
-    }
-    const newSkill = await skillRepo.create({
-      name
-    })
-    const result = await skillRepo.save(newSkill)
-    res.status(200).json({
-      status: 'success',
-      data: result
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
 }
 
-async function deletePackage (req, res, next) {
-  try {
-    const { skillId } = req.params
-    if (isUndefined(skillId) || isNotValidSting(skillId)) {
-      res.status(400).json({
-        status: 'failed',
-        message: 'ID錯誤'
-      })
-      return
+// [DELETE] 刪除教練專長
+async function delete_addcoachingSkill(req, res, next){
+    try{
+        // [HTTP 200] 資料刪除成功
+        resStatus({
+          res:res,
+          status:200
+        });
+    }catch(error){
+      // [HTTP 500] 伺服器異常
+      logger.error(error);
+      next(error);
     }
-    const result = await dataSource.getRepository('Skill').delete(skillId)
-    if (result.affected === 0) {
-      res.status(400).json({
-        status: 'failed',
-        message: 'ID錯誤'
-      })
-      return
-    }
-    res.status(200).json({
-      status: 'success'
-    })
-  } catch (error) {
-    logger.error(error)
-    next(error)
-  }
+    
+
 }
 
 module.exports = {
-  getAll,
-  post,
-  deletePackage
+    get_coachingSkill,
+    post_addcoachingSkill,
+    delete_addcoachingSkill
 }

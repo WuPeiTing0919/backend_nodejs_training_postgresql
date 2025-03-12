@@ -1,4 +1,5 @@
-const { EntitySchema } = require('typeorm')
+// 「教練課程」的資料庫欄位設計
+const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
   name: 'Course',
@@ -7,7 +8,8 @@ module.exports = new EntitySchema({
     id: {
       primary: true,
       type: 'uuid',
-      generated: 'uuid'
+      generated: 'uuid',
+      nullable: false
     },
     user_id: {
       type: 'uuid',
@@ -26,12 +28,14 @@ module.exports = new EntitySchema({
       type: 'text',
       nullable: false
     },
-    start_at: {
+    startAt: {
       type: 'timestamp',
+      name: 'start_at',
       nullable: false
     },
-    end_at: {
+    endAt: {
       type: 'timestamp',
+      name: 'end_at',
       nullable: false
     },
     max_participants: {
@@ -43,14 +47,16 @@ module.exports = new EntitySchema({
       length: 2048,
       nullable: false
     },
-    created_at: {
+    createdAt: {
       type: 'timestamp',
       createDate: true,
+      name: 'created_at',
       nullable: false
     },
-    updated_at: {
+    updatedAt: {
       type: 'timestamp',
-      updateDate: true,
+      createDate: true,
+      name: 'updated_at',
       nullable: false
     }
   },
@@ -59,19 +65,19 @@ module.exports = new EntitySchema({
       target: 'User',
       type: 'many-to-one',
       joinColumn: {
-        name: 'user_id',
-        referencedColumnName: 'id',
-        foreignKeyConstraintName: 'courses_user_id_fk'
+          name: 'user_id',
+          referencedColumnName: 'id',
+          foreignKeyConstraintName: 'courses_user_id_fk'
       }
     },
     Skill: {
-      target: 'Skill',
-      type: 'many-to-one',
-      joinColumn: {
-        name: 'skill_id',
-        referencedColumnName: 'id',
-        foreignKeyConstraintName: 'courses_skill_id_fk'
-      }
+        target: 'Skill',
+        type: 'many-to-one',
+        joinColumn: {
+            name: 'skill_id',
+            referencedColumnName: 'id',
+            foreignKeyConstraintName: 'courses_skill_id_fk'
+        }
     }
   }
-})
+});

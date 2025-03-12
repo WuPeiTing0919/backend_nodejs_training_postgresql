@@ -1,14 +1,17 @@
-const { DataSource } = require('typeorm')
-const config = require('../config/index')
+// 資料庫、資料表啟動設定檔案
 
-const Skill = require('../entities/Skill')
-const User = require('../entities/User')
-const Coach = require('../entities/Coach')
-const Course = require('../entities/Course')
-const CreditPackage = require('../entities/CreditPackages')
-const CreditPurchase = require('../entities/CreditPurchase')
-const CourseBooking = require('../entities/CourseBooking')
-const CoachLinkSkill = require('../entities/CoachLinkSkill')
+const { DataSource } = require('typeorm');
+const config = require('../config/index');
+
+// 載入需要資料表套件
+const CreditPackage = require('../entities/CreditPackages');
+const Skill = require('../entities/Skill');
+const User = require('../entities/User');
+const Coach = require('../entities/Coach');
+const Course = require('../entities/Course');
+const creditPurchase = require('../entities/creditPurchase');
+const courseBooking = require('../entities/CourseBooking');
+const coachLinkSkill = require('../entities/CoachLinkSkill');
 
 const dataSource = new DataSource({
   type: 'postgres',
@@ -20,16 +23,9 @@ const dataSource = new DataSource({
   synchronize: config.get('db.synchronize'),
   poolSize: 10,
   entities: [
-    CreditPackage,
-    Skill,
-    User,
-    Coach,
-    Course,
-    CreditPurchase,
-    CourseBooking,
-    CoachLinkSkill
+    CreditPackage,Skill,User,Coach,Course,creditPurchase,courseBooking,coachLinkSkill
   ],
   ssl: config.get('db.ssl')
-})
+});
 
-module.exports = { dataSource }
+module.exports = { dataSource };
